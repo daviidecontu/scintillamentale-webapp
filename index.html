@@ -1,0 +1,76 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scintillamentale Stimolo</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: black;
+    }
+    #flash {
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="flash"></div>
+  <audio id="binaural" loop></audio>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const socket = io('https://YOUR_SERVER_URL'); // Sostituisci con l'URL del tuo server WebSocket
+    const flash = document.getElementById('flash');
+    const audio = document.getElementById('binaural');
+
+    let flashing = false;
+    let frequency = 2; // Hz
+    let interval;
+
+    function startFlashing(freq) {
+      clearInterval(interval);
+      frequency = freq;
+      flashing = true;
+      let on = false;
+      interval = setInterval(() => {
+        flash.style.backgroundColor = on ? 'white' : 'black';
+        on = !on;
+      }, 1000 / (frequency * 2));
+    }
+
+    function stopFlashing() {
+      clearInterval(interval);
+      flash.style.backgroundColor = 'black';
+      flashing = false;
+    }
+
+    socket.on('stimolo', (data) => {
+      if (data.cmd === 'start') {
+        startFlashing(data.freq);
+        if (data.audio) {
+          audio.src = data.audio;
+          audio.play();
+        }
+      } else if (data.cmd === 'stop') {
+        stopFlashing();
+        audio.pause();
+      } else if (data.cmd === 'changeFreq') {
+        if (flashing) startFlashing(data.freq);
+      }
+    });
+
+    document.body.addEventListener('click', () => {
+      audio.play().catch(() => {});
+    }, { once: true });
+  </script>
+</body>
+</html>
